@@ -74,7 +74,7 @@ def check_motion_resolution(motion_id: str):
     if not motion or motion["status"] != "active":
         return
     
-    # Resolve if: 5+ votes OR 24 hours passed
+    # Resolve if: 3+ votes OR 24 hours passed
     total_votes = len(motion["votes"])
     created = datetime.fromisoformat(motion["created_at"])
     
