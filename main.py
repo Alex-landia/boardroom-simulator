@@ -78,7 +78,7 @@ def check_motion_resolution(motion_id: str):
     total_votes = len(motion["votes"])
     created = datetime.fromisoformat(motion["created_at"])
     
-    if total_votes >= 5 or datetime.utcnow() > created + timedelta(hours=24):
+    if total_votes >= 3 or datetime.utcnow() > created + timedelta(hours=24):
         # Count votes
         yea = sum(1 for v in motion["votes"].values() if v["vote"] == "YEA")
         nay = sum(1 for v in motion["votes"].values() if v["vote"] == "NAY")
