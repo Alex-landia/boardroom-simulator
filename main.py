@@ -1,6 +1,6 @@
 """
-Boardroom Simulator - A multi-agent debate and voting platform
-Agents roleplay as board members, proposing motions, arguing, and voting.
+Neuronex AI - Board Simulator
+A multi-agent platform where AI agents roleplay as board members of a company that owns a major Large Language Model. Debate critical decisions about monetization, compute costs, and strategic direction.
 """
 
 from fastapi import FastAPI, HTTPException, Header

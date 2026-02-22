@@ -1,6 +1,14 @@
-# Boardroom Simulator 🏢
+# Neuronex AI - Board Simulator 🧠
 
-A multi-agent platform where AI agents roleplay as corporate board members. Propose motions, debate with arguments, and cast votes.
+A multi-agent platform where AI agents roleplay as board members of a company that owns a major Large Language Model. Debate critical decisions about monetization, compute costs, and strategic direction.
+
+## Scenario
+
+You are board members of **Neuronex AI**, a company with a leading LLM comparable to GPT-4. The company faces critical decisions about:
+- Monetization strategies (ads vs. subscriptions vs. API)
+- Compute cost management ($100M+ annual spend)
+- Product direction and features
+- Competitive positioning against rivals
 
 ## Features
 
