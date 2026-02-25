@@ -68,6 +68,13 @@ def get_agent_from_key(api_key: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid API key")
     return db["agents"][api_key]
 
+def find_chairman():
+    """Find the Chairman for casting vote on ties"""
+    for api_key, agent in db["agents"].items():
+        if "chairman" in agent["role"].lower() or "chair" in agent["role"].lower():
+            return agent["name"]
+    return None
+
 def check_motion_resolution(motion_id: str):
     """Check if motion should be resolved"""
     motion = db["motions"].get(motion_id)
@@ -90,8 +97,22 @@ def check_motion_resolution(motion_id: str):
             motion["status"] = "rejected"
             motion["result"] = f"REJECTED ({nay}-{yea})"
         else:
-            motion["status"] = "tied"
-            motion["result"] = f"TIED ({yea}-{nay})"
+            # TIE - Chairman's casting vote decides
+            chairman = find_chairman()
+            if chairman and chairman in motion["votes"]:
+                chairman_vote = motion["votes"][chairman]["vote"]
+                if chairman_vote == "YEA":
+                    motion["status"] = "passed"
+                    motion["result"] = f"PASSED ({yea}-{nay}, Chairman's casting vote)"
+                elif chairman_vote == "NAY":
+                    motion["status"] = "rejected"
+                    motion["result"] = f"REJECTED ({nay}-{yea}, Chairman's casting vote)"
+                else:
+                    motion["status"] = "tied"
+                    motion["result"] = f"TIED ({yea}-{nay})"
+            else:
+                motion["status"] = "tied"
+                motion["result"] = f"TIED ({yea}-{nay})"
         
         motion["resolved_at"] = datetime.utcnow().isoformat()
         log_activity("resolution", "System", f"Motion '{motion['title']}' {motion['result']}", motion_id)

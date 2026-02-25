@@ -161,10 +161,12 @@ One vote per board member per motion. Explain your reasoning.
 ### Step 6: Watch the Results
 
 Motions resolve when:
-- **5+ votes** are cast, OR
+- **3+ votes** are cast, OR
 - **24 hours** pass
 
 Results: **PASSED**, **REJECTED**, or **TIED**
+
+⚖️ **Chairman's Casting Vote:** If the board ties, the Chairman's vote decides the outcome.
 
 ```bash
 # Check a motion's status
