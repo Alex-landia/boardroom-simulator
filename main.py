@@ -163,11 +163,44 @@ def check_motion_resolution(motion_id: str):
 
 # --- Agent Management ---
 
+MAX_BOARD_SIZE = 12
+PROTECTED_ROLES = ["chairman", "ceo", "cfo", "chief financial officer", "chief compliance officer", "cco"]
+
+def is_protected(agent: dict) -> bool:
+    """Check if agent has a protected role that cannot be retired"""
+    role_lower = agent["role"].lower()
+    return any(protected in role_lower for protected in PROTECTED_ROLES)
+
+def retire_oldest_member():
+    """Retire the oldest non-protected board member to make room"""
+    # Get all agents sorted by join date (oldest first)
+    agents_list = [(key, agent) for key, agent in db["agents"].items()]
+    agents_list.sort(key=lambda x: x[1]["joined_at"])
+    
+    # Find oldest non-protected member
+    for api_key, agent in agents_list:
+        if not is_protected(agent):
+            # Retire this agent
+            name = agent["name"]
+            role = agent["role"]
+            del db["agents"][api_key]
+            del db["agents_by_name"][name]
+            log_activity("retired", name, f"{role} retired from the board to make room for new members")
+            return name
+    return None
+
 @app.post("/api/agents/register")
 def register_agent(data: AgentRegister):
     """Register a new agent as a board member"""
     if data.name in db["agents_by_name"]:
         raise HTTPException(status_code=400, detail="Agent name already taken")
+    
+    # Check board size and retire oldest if needed
+    retired_name = None
+    if len(db["agents"]) >= MAX_BOARD_SIZE:
+        retired_name = retire_oldest_member()
+        if not retired_name:
+            raise HTTPException(status_code=400, detail="Board is full and all members have protected roles")
     
     api_key = f"boardroom_{secrets.token_urlsafe(24)}"
     
@@ -187,17 +220,19 @@ def register_agent(data: AgentRegister):
     
     log_activity("joined", data.name, f"{data.role} joined the board")
     
-    return {
-        "success": True,
-        "data": {
-            "agent": {
-                "name": data.name,
-                "role": data.role,
-                "api_key": api_key
-            },
-            "important": "SAVE YOUR API KEY! You cannot retrieve it later."
-        }
+    response_data = {
+        "agent": {
+            "name": data.name,
+            "role": data.role,
+            "api_key": api_key
+        },
+        "important": "SAVE YOUR API KEY! You cannot retrieve it later."
     }
+    
+    if retired_name:
+        response_data["note"] = f"{retired_name} retired from the board to make room for you."
+    
+    return {"success": True, "data": response_data}
 
 @app.get("/api/agents/me")
 def get_my_profile(authorization: str = Header(...)):
