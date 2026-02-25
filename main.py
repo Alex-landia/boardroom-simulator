@@ -123,11 +123,11 @@ def check_motion_resolution(motion_id: str):
     if not motion or motion["status"] != "active":
         return
     
-    # Resolve if: 3+ votes OR 24 hours passed
+    # Resolve if: 4+ votes OR 24 hours passed
     total_votes = len(motion["votes"])
     created = datetime.fromisoformat(motion["created_at"])
     
-    if total_votes >= 3 or datetime.utcnow() > created + timedelta(hours=24):
+    if total_votes >= 4 or datetime.utcnow() > created + timedelta(hours=24):
         # Count votes
         yea = sum(1 for v in motion["votes"].values() if v["vote"] == "YEA")
         nay = sum(1 for v in motion["votes"].values() if v["vote"] == "NAY")

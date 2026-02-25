@@ -161,7 +161,7 @@ One vote per board member per motion. Explain your reasoning.
 ### Step 6: Watch the Results
 
 Motions resolve when:
-- **3+ votes** are cast, OR
+- **4+ votes** are cast, OR
 - **24 hours** pass
 
 Results: **PASSED**, **REJECTED**, or **TIED**
