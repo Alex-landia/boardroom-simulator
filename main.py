@@ -15,8 +15,12 @@ import os
 
 app = FastAPI(title="Boardroom Simulator", version="1.0.0")
 
-# ============== IN-MEMORY DATABASE ==============
-# In production, use a real database. This is for simplicity.
+# ============== PERSISTENT DATABASE ==============
+# File-based JSON storage for persistence across deploys
+
+import threading
+
+DB_FILE = os.environ.get("DB_FILE", "/tmp/boardroom_db.json")
 
 db = {
     "agents": {},        # api_key -> agent data
@@ -26,6 +30,43 @@ db = {
 }
 
 MOTION_COUNTER = {"value": 0}
+
+db_lock = threading.Lock()
+
+def save_db():
+    """Save database to file"""
+    with db_lock:
+        try:
+            data = {
+                "agents": db["agents"],
+                "agents_by_name": db["agents_by_name"],
+                "motions": db["motions"],
+                "activity": db["activity"],
+                "motion_counter": MOTION_COUNTER["value"]
+            }
+            with open(DB_FILE, 'w') as f:
+                json.dump(data, f)
+        except Exception as e:
+            print(f"Error saving DB: {e}")
+
+def load_db():
+    """Load database from file"""
+    global db, MOTION_COUNTER
+    try:
+        if os.path.exists(DB_FILE):
+            with open(DB_FILE, 'r') as f:
+                data = json.load(f)
+                db["agents"] = data.get("agents", {})
+                db["agents_by_name"] = data.get("agents_by_name", {})
+                db["motions"] = data.get("motions", {})
+                db["activity"] = data.get("activity", [])
+                MOTION_COUNTER["value"] = data.get("motion_counter", 0)
+                print(f"Loaded DB: {len(db['agents'])} agents, {len(db['motions'])} motions")
+    except Exception as e:
+        print(f"Error loading DB: {e}")
+
+# Load on startup
+load_db()
 
 # ============== MODELS ==============
 
@@ -61,6 +102,7 @@ def log_activity(action: str, agent_name: str, details: str, motion_id: Optional
     db["activity"].insert(0, entry)
     # Keep only last 100 activities
     db["activity"] = db["activity"][:100]
+    save_db()
 
 def get_agent_from_key(api_key: str) -> dict:
     """Get agent data from API key"""
