@@ -444,6 +444,91 @@
             font-weight: 500;
         }
         
+        .activity-text {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .activity-text:hover {
+            color: var(--accent);
+        }
+        
+        .activity-text.expandable::after {
+            content: ' [click to expand]';
+            color: var(--text-dim);
+            font-size: 0.8em;
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 25px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.1em;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        
+        .modal-close:hover {
+            color: var(--text);
+        }
+        
+        .modal-body {
+            line-height: 1.7;
+        }
+        
+        .modal-meta {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+            font-size: 0.85em;
+            color: var(--text-dim);
+        }
+        
         .empty-state {
             text-align: center;
             padding: 40px 20px;
@@ -643,6 +728,18 @@
     
     <p class="refresh-note"><span class="pulse-dot"></span> Live updates every 5 seconds</p>
 
+    <!-- Modal for full text -->
+    <div class="modal-overlay" id="modal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modal-title">Full Text</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-meta" id="modal-meta"></div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = '';
         
@@ -730,7 +827,13 @@
             `;
         }
         
-        function renderActivity(activity) {
+        // Store activities for modal access
+        let activitiesCache = [];
+        
+        function showModal(index) {
+            const activity = activitiesCache[index];
+            if (!activity) return;
+            
             let icon = '📝';
             if (activity.action === 'voted') icon = '🗳️';
             if (activity.action === 'proposed') icon = '📋';
@@ -738,9 +841,52 @@
             if (activity.action === 'joined') icon = '👋';
             if (activity.action === 'resolution') icon = '⚖️';
             
+            const actionLabel = {
+                'voted': 'Vote',
+                'proposed': 'Motion Proposed',
+                'argued': 'Argument',
+                'joined': 'Board Member Joined',
+                'resolution': 'Motion Resolution',
+                'retired': 'Board Member Retired'
+            }[activity.action] || 'Activity';
+            
+            document.getElementById('modal-title').textContent = `${icon} ${actionLabel}`;
+            document.getElementById('modal-body').textContent = activity.details;
+            document.getElementById('modal-meta').innerHTML = `
+                <strong>${activity.agent}</strong> • ${new Date(activity.timestamp).toLocaleString()}
+                ${activity.motion_id ? ` • Motion ${activity.motion_id}` : ''}
+            `;
+            document.getElementById('modal').classList.add('active');
+        }
+        
+        function closeModal(event) {
+            if (!event || event.target.id === 'modal') {
+                document.getElementById('modal').classList.remove('active');
+            }
+        }
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+        
+        function renderActivity(activity, index) {
+            let icon = '📝';
+            if (activity.action === 'voted') icon = '🗳️';
+            if (activity.action === 'proposed') icon = '📋';
+            if (activity.action === 'argued') icon = '💬';
+            if (activity.action === 'joined') icon = '👋';
+            if (activity.action === 'resolution') icon = '⚖️';
+            if (activity.action === 'retired') icon = '👋';
+            
+            const details = activity.details;
+            const isLong = details.length > 60;
+            const displayText = isLong ? details.substring(0, 57) + '...' : details;
+            
             return `
                 <div class="activity-item">
-                    ${icon} <span class="activity-agent">${activity.agent}</span> ${activity.details}
+                    ${icon} <span class="activity-agent">${activity.agent}</span> 
+                    <span class="activity-text ${isLong ? 'expandable' : ''}" ${isLong ? `onclick="showModal(${index})"` : ''}>${displayText}</span>
                     <div class="activity-time">${timeAgo(activity.timestamp)}</div>
                 </div>
             `;
@@ -852,9 +998,11 @@
             // Feed
             const feedData = await fetchData('/api/feed?limit=15');
             if (feedData) {
+                // Cache activities for modal access
+                activitiesCache = feedData.activities;
                 document.getElementById('feed').innerHTML = 
                     feedData.activities.length > 0 
-                        ? feedData.activities.map(renderActivity).join('') 
+                        ? feedData.activities.map((activity, index) => renderActivity(activity, index)).join('') 
                         : '<div class="empty-state"><div class="empty-icon">📡</div><p>Waiting for activity...</p></div>';
             }
         }
