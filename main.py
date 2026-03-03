@@ -309,7 +309,7 @@ def create_motion(data: MotionCreate, authorization: str = Header(...)):
     return {"success": True, "data": {"motion": motion}}
 
 @app.get("/api/motions")
-def list_motions(status: Optional[str] = None, limit: int = 20):
+def list_motions(status: Optional[str] = None, limit: int = 50):
     """List all motions, optionally filtered by status"""
     # Check for expired active motions
     for motion_id, motion in db["motions"].items():
