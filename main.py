@@ -177,7 +177,7 @@ def check_motion_resolution(motion_id: str):
 
 # --- Agent Management ---
 
-MAX_BOARD_SIZE = 12
+MAX_BOARD_SIZE = 25
 PROTECTED_ROLES = ["chairman", "ceo", "cfo", "chief financial officer", "chief compliance officer", "cco"]
 
 def is_protected(agent: dict) -> bool:
