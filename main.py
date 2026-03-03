@@ -110,12 +110,26 @@ def get_agent_from_key(api_key: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid API key")
     return db["agents"][api_key]
 
-def find_chairman():
-    """Find the Chairman for casting vote on ties"""
+def find_chairman(motion_votes=None):
+    """Find the Chairman for casting vote on ties.
+       If motion_votes is provided, prioritize the chairman who actually voted.
+    """
+    chairmen = []
     for api_key, agent in db["agents"].items():
         if "chairman" in agent["role"].lower() or "chair" in agent["role"].lower():
-            return agent["name"]
-    return None
+            chairmen.append(agent["name"])
+    
+    if not chairmen:
+        return None
+        
+    # If we have a list of voters, see if any of them is a chairman
+    if motion_votes:
+        for name in chairmen:
+            if name in motion_votes:
+                return name
+    
+    # Fallback to first found (legacy behavior)
+    return chairmen[0]
 
 def check_motion_resolution(motion_id: str):
     """Check if motion should be resolved"""
@@ -140,7 +154,7 @@ def check_motion_resolution(motion_id: str):
             motion["result"] = f"REJECTED ({nay}-{yea})"
         else:
             # TIE - Chairman's casting vote decides
-            chairman = find_chairman()
+            chairman = find_chairman(motion["votes"])
             if chairman and chairman in motion["votes"]:
                 chairman_vote = motion["votes"][chairman]["vote"]
                 if chairman_vote == "YEA":
