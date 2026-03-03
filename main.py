@@ -297,6 +297,11 @@ def create_motion(data: MotionCreate, authorization: str = Header(...)):
 @app.get("/api/motions")
 def list_motions(status: Optional[str] = None, limit: int = 20):
     """List all motions, optionally filtered by status"""
+    # Check for expired active motions
+    for motion_id, motion in db["motions"].items():
+        if motion["status"] == "active":
+            check_motion_resolution(motion_id)
+
     motions = list(db["motions"].values())
     
     if status:
