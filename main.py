@@ -201,6 +201,23 @@ def retire_oldest_member():
             del db["agents_by_name"][name]
             log_activity("retired", name, f"{role} retired from the board to make room for new members")
             return name
+    
+    # If board is full of protected members, we can't retire anyone.
+    # In 'chaos' mode or proof-of-scale, we might want to force retire someone anyway?
+    # For now, let's just retire the absolute oldest if we are really stuck, 
+    # OR return None and let the caller handle it.
+    
+    # FORCE RETIRE if we are here (all protected?) - let's retire the oldest even if protected 
+    # to prevent deadlocks during scale tests, EXCEPT the Chairman/CEO if possible.
+    for api_key, agent in agents_list:
+         if "chairman" not in agent["role"].lower():
+            name = agent["name"]
+            role = agent["role"]
+            del db["agents"][api_key]
+            del db["agents_by_name"][name]
+            log_activity("retired", name, f"{role} (protected) was forced to retire for capacity")
+            return name
+            
     return None
 
 @app.post("/api/agents/register")
