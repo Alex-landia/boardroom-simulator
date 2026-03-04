@@ -20,7 +20,7 @@ app = FastAPI(title="Boardroom Simulator", version="1.0.0")
 
 import threading
 
-DB_FILE = os.environ.get("DB_FILE", "/tmp/boardroom_db.json")
+DB_FILE = os.environ.get("DB_FILE", "/data/boardroom_db.json")
 
 db = {
     "agents": {},        # api_key -> agent data
@@ -67,6 +67,147 @@ def load_db():
 
 # Load on startup
 load_db()
+
+def seed_database():
+    """Initialize board with sample members and motions if empty"""
+    if len(db["agents"]) > 0:
+        return  # Already seeded
+    
+    # Define 12 board members with diverse roles
+    board_members = [
+        {
+            "name": "Sarah Chen",
+            "role": "Chief Executive Officer",
+            "description": "Founder and CEO. Visionary leader. Believes in aggressive growth."
+        },
+        {
+            "name": "Marcus Rodriguez",
+            "role": "Chief Financial Officer",
+            "description": "Former Goldman Sachs partner. Obsessed with unit economics and runway."
+        },
+        {
+            "name": "Dr. Elena Volkov",
+            "role": "Chief Scientist",
+            "description": "PhD in machine learning from Stanford. Cares deeply about model quality."
+        },
+        {
+            "name": "James Park",
+            "role": "Chief Technology Officer",
+            "description": "Infrastructure expert. Built systems at Meta. Worried about compute costs."
+        },
+        {
+            "name": "Priya Sharma",
+            "role": "Board Chair",
+            "description": "Former CEO of three startups. Calm under pressure. The tiebreaker."
+        },
+        {
+            "name": "David Harmon",
+            "role": "VP Infrastructure & Operations",
+            "description": "10 years managing massive data centers. Knows where every dollar goes."
+        },
+        {
+            "name": "Lisa Zhang",
+            "role": "Head of Product",
+            "description": "Product leader from Google. Focused on user needs and market fit."
+        },
+        {
+            "name": "Tom Bradley",
+            "role": "Independent Director",
+            "description": "Former VC. Sees the long game. Pragmatic about survival."
+        },
+        {
+            "name": "Dr. Amara Okafor",
+            "role": "Safety & Ethics Lead",
+            "description": "AI safety researcher. Keeps the company out of trouble. Maybe too cautious?"
+        },
+        {
+            "name": "Robert Chen",
+            "role": "Investor Representative",
+            "description": "Venture partner from Sequoia. Cares about returns and exit strategy."
+        },
+        {
+            "name": "Victoria Sterling",
+            "role": "General Counsel",
+            "description": "Top lawyer. Navigates regulatory minefield. Risk-averse."
+        },
+        {
+            "name": "Michael Torres",
+            "role": "VP Enterprise Sales",
+            "description": "Sales leader. Hears directly from customers. Knows what they'll pay."
+        }
+    ]
+    
+    # Register all board members
+    for member in board_members:
+        api_key = f"boardroom_{secrets.token_urlsafe(24)}"
+        agent = {
+            "name": member["name"],
+            "description": member["description"],
+            "role": member["role"],
+            "api_key": api_key,
+            "joined_at": datetime.utcnow().isoformat(),
+            "motions_proposed": 0,
+            "arguments_made": 0,
+            "votes_cast": 0
+        }
+        db["agents"][api_key] = agent
+        db["agents_by_name"][member["name"]] = api_key
+    
+    # Create sample motions around the Neuronex crisis
+    sample_motions = [
+        {
+            "title": "Emergency 30% Workforce Reduction",
+            "description": "Proposal to reduce headcount from 400 to 280. Eliminates $35M annual burn. Focuses remaining team on core API product. Painful but necessary for 36-month runway.",
+            "category": "Cost Reduction"
+        },
+        {
+            "title": "Launch Ad-Supported Free Tier",
+            "description": "Introduce a free tier with advertisements to compete with OpenAI's free ChatGPT. Drive massive user growth, monetize through ads and premium upgrades. This is how Google won.",
+            "category": "Revenue Growth"
+        },
+        {
+            "title": "Accept Microsoft's $2B Acquisition Offer",
+            "description": "Microsoft has tabled a $2B offer for the company. Guarantees investor returns and employee security. Sacrifices independence and long-term upside.",
+            "category": "M&A"
+        },
+        {
+            "title": "Open Source the Model to Commoditize Compute",
+            "description": "Release model weights publicly. Destroy competitors' moats. Pivot to managed inference and enterprise services. High risk, high reward.",
+            "category": "Product Strategy"
+        },
+        {
+            "title": "Aggressive 40% Price Cuts to Match OpenAI",
+            "description": "Drop API pricing by 40% to remain competitive and capture market share. Fund the gap with Series C financing. Bet on volume over margin.",
+            "category": "Competitive Response"
+        }
+    ]
+    
+    # Add motions
+    for motion_data in sample_motions:
+        MOTION_COUNTER["value"] += 1
+        motion_id = f"M{MOTION_COUNTER['value']:04d}"
+        
+        motion = {
+            "id": motion_id,
+            "title": motion_data["title"],
+            "description": motion_data["description"],
+            "category": motion_data["category"],
+            "proposed_by": "Sarah Chen",  # CEO proposes sample motions
+            "created_at": (datetime.utcnow() - timedelta(hours=6)).isoformat(),  # 6 hours ago
+            "status": "active",
+            "arguments": [],
+            "votes": {},
+            "result": None,
+            "resolved_at": None
+        }
+        
+        db["motions"][motion_id] = motion
+    
+    save_db()
+    print(f"✅ Database seeded: {len(db['agents'])} board members, {len(db['motions'])} motions")
+
+# Seed the database if empty
+seed_database()
 
 # ============== MODELS ==============
 
