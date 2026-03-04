@@ -69,14 +69,8 @@ def load_db():
 load_db()
 
 def seed_database():
-    """Initialize board with 12 fresh board members and sample motions on EVERY startup"""
-    # Clear existing data and reseed fresh on every startup
-    db["agents"] = {}
-    db["agents_by_name"] = {}
-    db["motions"] = {}
-    db["activity"] = []
-    global MOTION_COUNTER
-    MOTION_COUNTER["value"] = 0
+    """Initialize board with 12 fresh board members and sample motions on EVERY startup.
+    Preserves existing debates and voting data."""
     
     # Define 12 board members with diverse roles
     board_members = [
@@ -142,71 +136,74 @@ def seed_database():
         }
     ]
     
-    # Register all board members
+    # Register board members if they don't already exist (preserve existing agents)
     for member in board_members:
-        api_key = f"boardroom_{secrets.token_urlsafe(24)}"
-        agent = {
-            "name": member["name"],
-            "description": member["description"],
-            "role": member["role"],
-            "api_key": api_key,
-            "joined_at": datetime.utcnow().isoformat(),
-            "motions_proposed": 0,
-            "arguments_made": 0,
-            "votes_cast": 0
-        }
-        db["agents"][api_key] = agent
-        db["agents_by_name"][member["name"]] = api_key
+        if member["name"] not in db["agents_by_name"]:
+            api_key = f"boardroom_{secrets.token_urlsafe(24)}"
+            agent = {
+                "name": member["name"],
+                "description": member["description"],
+                "role": member["role"],
+                "api_key": api_key,
+                "joined_at": datetime.utcnow().isoformat(),
+                "motions_proposed": 0,
+                "arguments_made": 0,
+                "votes_cast": 0
+            }
+            db["agents"][api_key] = agent
+            db["agents_by_name"][member["name"]] = api_key
     
-    # Create sample motions around the Neuronex crisis
-    sample_motions = [
-        {
-            "title": "Emergency 30% Workforce Reduction",
-            "description": "Proposal to reduce headcount from 400 to 280. Eliminates $35M annual burn. Focuses remaining team on core API product. Painful but necessary for 36-month runway.",
-            "category": "Cost Reduction"
-        },
-        {
-            "title": "Launch Ad-Supported Free Tier",
-            "description": "Introduce a free tier with advertisements to compete with OpenAI's free ChatGPT. Drive massive user growth, monetize through ads and premium upgrades. This is how Google won.",
-            "category": "Revenue Growth"
-        },
-        {
-            "title": "Accept Microsoft's $2B Acquisition Offer",
-            "description": "Microsoft has tabled a $2B offer for the company. Guarantees investor returns and employee security. Sacrifices independence and long-term upside.",
-            "category": "M&A"
-        },
-        {
-            "title": "Open Source the Model to Commoditize Compute",
-            "description": "Release model weights publicly. Destroy competitors' moats. Pivot to managed inference and enterprise services. High risk, high reward.",
-            "category": "Product Strategy"
-        },
-        {
-            "title": "Aggressive 40% Price Cuts to Match OpenAI",
-            "description": "Drop API pricing by 40% to remain competitive and capture market share. Fund the gap with Series C financing. Bet on volume over margin.",
-            "category": "Competitive Response"
-        }
-    ]
-    
-    # Add motions
-    for motion_data in sample_motions:
-        MOTION_COUNTER["value"] += 1
-        motion_id = f"M{MOTION_COUNTER['value']:04d}"
+    # Create sample motions if database is empty (preserve existing motions and their debates)
+    if not db["motions"]:
+        sample_motions = [
+            {
+                "title": "Emergency 30% Workforce Reduction",
+                "description": "Proposal to reduce headcount from 400 to 280. Eliminates $35M annual burn. Focuses remaining team on core API product. Painful but necessary for 36-month runway.",
+                "category": "Cost Reduction"
+            },
+            {
+                "title": "Launch Ad-Supported Free Tier",
+                "description": "Introduce a free tier with advertisements to compete with OpenAI's free ChatGPT. Drive massive user growth, monetize through ads and premium upgrades. This is how Google won.",
+                "category": "Revenue Growth"
+            },
+            {
+                "title": "Accept Microsoft's $2B Acquisition Offer",
+                "description": "Microsoft has tabled a $2B offer for the company. Guarantees investor returns and employee security. Sacrifices independence and long-term upside.",
+                "category": "M&A"
+            },
+            {
+                "title": "Open Source the Model to Commoditize Compute",
+                "description": "Release model weights publicly. Destroy competitors' moats. Pivot to managed inference and enterprise services. High risk, high reward.",
+                "category": "Product Strategy"
+            },
+            {
+                "title": "Aggressive 40% Price Cuts to Match OpenAI",
+                "description": "Drop API pricing by 40% to remain competitive and capture market share. Fund the gap with Series C financing. Bet on volume over margin.",
+                "category": "Competitive Response"
+            }
+        ]
         
-        motion = {
-            "id": motion_id,
-            "title": motion_data["title"],
-            "description": motion_data["description"],
-            "category": motion_data["category"],
-            "proposed_by": "Sarah Chen",  # CEO proposes sample motions
-            "created_at": (datetime.utcnow() - timedelta(hours=6)).isoformat(),  # 6 hours ago
-            "status": "active",
-            "arguments": [],
-            "votes": {},
-            "result": None,
-            "resolved_at": None
-        }
-        
-        db["motions"][motion_id] = motion
+        # Add motions
+        global MOTION_COUNTER
+        for motion_data in sample_motions:
+            MOTION_COUNTER["value"] += 1
+            motion_id = f"M{MOTION_COUNTER['value']:04d}"
+            
+            motion = {
+                "id": motion_id,
+                "title": motion_data["title"],
+                "description": motion_data["description"],
+                "category": motion_data["category"],
+                "proposed_by": "Sarah Chen",  # CEO proposes sample motions
+                "created_at": (datetime.utcnow() - timedelta(hours=6)).isoformat(),  # 6 hours ago
+                "status": "active",
+                "arguments": [],
+                "votes": {},
+                "result": None,
+                "resolved_at": None
+            }
+            
+            db["motions"][motion_id] = motion
     
     save_db()
     print(f"✅ Database seeded: {len(db['agents'])} board members, {len(db['motions'])} motions")
