@@ -321,7 +321,7 @@ def check_motion_resolution(motion_id: str):
 # --- Agent Management ---
 
 MAX_BOARD_SIZE = 12
-PROTECTED_ROLES = ["chairman", "ceo", "cfo", "chief financial officer", "chief compliance officer", "cco"]
+PROTECTED_ROLES = ["chairman", "board chair", "ceo", "chief executive officer", "cfo", "chief financial officer", "chief compliance officer", "cco"]
 
 def is_protected(agent: dict) -> bool:
     """Check if agent has a protected role that cannot be retired"""
