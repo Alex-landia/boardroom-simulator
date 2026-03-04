@@ -69,9 +69,14 @@ def load_db():
 load_db()
 
 def seed_database():
-    """Initialize board with sample members and motions if empty"""
-    if len(db["agents"]) > 0:
-        return  # Already seeded
+    """Initialize board with 12 fresh board members and sample motions on EVERY startup"""
+    # Clear existing data and reseed fresh on every startup
+    db["agents"] = {}
+    db["agents_by_name"] = {}
+    db["motions"] = {}
+    db["activity"] = []
+    global MOTION_COUNTER
+    MOTION_COUNTER["value"] = 0
     
     # Define 12 board members with diverse roles
     board_members = [
